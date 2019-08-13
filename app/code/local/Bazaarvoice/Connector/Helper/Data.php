@@ -6,7 +6,7 @@ class Bazaarvoice_Connector_Helper_Data extends Mage_Core_Helper_Abstract
     const BV_SUBJECT_TYPE = 'bvSubjectType';
     const BV_EXTERNAL_SUBJECT_NAME = 'bvExternalSubjectName';
     const BV_EXTERNAL_SUBJECT_ID = 'bvExternalSubjectID';
-    
+
     const LOG_FILE = 'bazaarvoice.log';
 
     const CONST_SMARTSEO_BVRRP = 'bvrrp';

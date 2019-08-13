@@ -44,6 +44,7 @@ class Bazaarvoice_Connector_Block_Questions extends Mage_Core_Block_Template
             if(isset($parts['query'])) {
                 parse_str($parts['query'], $query);
                 unset($query['bvrrp']);
+                unset($query['bvstate']);
                 $baseUrl = $parts['scheme'] . '://' . $parts['host'] . $parts['path'] . '?' . http_build_query($query);
             } else {
                 $baseUrl = $productUrl;
