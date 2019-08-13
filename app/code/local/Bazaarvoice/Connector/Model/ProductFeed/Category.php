@@ -212,8 +212,8 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
         // Get external id
         $categoryExternalId = $bvHelper->getCategoryId($categoryDefault, $categoryDefault->getStoreId());
 
-        $categoryName = htmlspecialchars($categoryDefault->getName(), ENT_QUOTES, 'UTF-8');
-        $categoryPageUrl = htmlspecialchars($categoryDefault->getData('localized_url'), ENT_QUOTES, 'UTF-8');
+        $categoryName = htmlspecialchars($categoryDefault->getName(), ENT_QUOTES, 'UTF-8', false);
+        $categoryPageUrl = htmlspecialchars($categoryDefault->getData('localized_url'), ENT_QUOTES, 'UTF-8', false);
 
         $parentExtId = '';
         /* @var $parentCategory Mage_Catalog_Model_Category */
@@ -237,7 +237,7 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
         /* @var $curCategory Mage_Catalog_Model_Category */
         foreach ($categoriesByLocale as $curLocale => $curCategory) {
             $ioObject->streamWrite('        <Name locale="' . $curLocale . '"><![CDATA[' .
-                htmlspecialchars($curCategory->getName(), ENT_QUOTES, 'UTF-8') . "]]></Name>\n");
+                htmlspecialchars($curCategory->getName(), ENT_QUOTES, 'UTF-8') . "]]></Name>\n", false);
         }
         $ioObject->streamWrite("    </Names>\n");
         // Write out localized <CategoryPageUrls>
@@ -245,7 +245,7 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
         /* @var $curCategory Mage_Catalog_Model_Category */
         foreach ($categoriesByLocale as $curLocale => $curCategory) {
             $ioObject->streamWrite('        <CategoryPageUrl locale="' . $curLocale . '">' . "<![CDATA[" .
-                htmlspecialchars($curCategory->getData('localized_url'), ENT_QUOTES, 'UTF-8') . "]]>" . "</CategoryPageUrl>\n");
+                htmlspecialchars($curCategory->getData('localized_url'), ENT_QUOTES, 'UTF-8', false) . "]]>" . "</CategoryPageUrl>\n");
         }
         $ioObject->streamWrite("    </CategoryPageUrls>\n");
 
@@ -284,7 +284,7 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
             $rewrite->loadByIdPath($idPath);
 
             if ($rewrite->getId()) {
-                Mage::log('request path: ' . $rewrite->getRequestPath());
+                Mage::log('request path: ' . $rewrite->getRequestPath(), Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
                 $category->setData('url', $urlInstance->getDirectUrl($rewrite->getRequestPath()));
                 Varien_Profiler::stop('REWRITE: '.__METHOD__);
                 return $category->getData('url');

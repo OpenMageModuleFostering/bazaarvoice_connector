@@ -248,6 +248,7 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
      */
     protected function writeProduct(Varien_Io_File $ioObject, Mage_Catalog_Model_Product $productDefault,
         array $productsByLocale)
+
     {
         // Get ref to BV helper
         /* @var $bvHelper Bazaarvoice_Connector_Helper_Data */
@@ -255,11 +256,42 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
 
         // Generate product external ID from SKU, this is the same for all groups / stores / views
         $productExternalId = $bvHelper->getProductId($productDefault);
+        
+        $website = $productDefault->getStore()->getWebsite()->getId();
+        
+        /* Make sure that CategoryExternalId is one written to Category section */
+        if($productDefault->getVisibility() == Mage_Catalog_Model_Product_Visibility::VISIBILITY_NOT_VISIBLE) {
+            if($productDefault->getData("product_families")){
+                // if families are enabled and product is not visible, use parent categories
+                $parentId = array_pop($productDefault->getData("product_families"));
+                $parentProduct = $bvHelper->getProductFromProductExternalId($parentId);
+                
+                // skip product if parent is disabled
+    			if (is_object($parentProduct)){
+    				if($parentProduct->getVisiblity() == Mage_Catalog_Model_Product_Visibility::VISIBILITY_NOT_VISIBLE || $parentProduct->getStatus() == Mage_Catalog_Model_Product_Status::STATUS_DISABLED || !in_array($website, $parentProduct->getWebsiteIds())) {
+    					Mage::log("        Skipping ".$productDefault->getSku()." because it is not visible and its parent product " . $parentProduct->getSku() . " is disabled.", Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
+    					return true;
+    				}
+    				
+    				if (!is_null($parentProduct->getCategoryIds())){
+    					$parentCategories = $parentProduct->getCategoryIds();
+    					Mage::log("        Product ".$productDefault->getSku()." using parent categories from ".$parentProduct->getSku(), Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
+    				}
+    			}
+            } else {
+				Mage::log("        Skipping ".$productDefault->getSku()." because it is not visible and has no parent product.", Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
+				return true;
+            }
+        } else {
+            // normal behavior
+            $parentCategories = $productDefault->getCategoryIds();
+            Mage::log("        Product ".$productDefault->getSku()." using its own categories", Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
+        }
 
         $ioObject->streamWrite("<Product>\n" .
             '    <ExternalId>' . $productExternalId . "</ExternalId>\n" .
-            '    <Name><![CDATA[' . htmlspecialchars($productDefault->getName(), ENT_QUOTES, 'UTF-8') . "]]></Name>\n" .
-            '    <Description><![CDATA[' . htmlspecialchars($productDefault->getData('short_description'), ENT_QUOTES, 'UTF-8') .
+            '    <Name><![CDATA[' . htmlspecialchars($productDefault->getName(), ENT_QUOTES, 'UTF-8', false) . "]]></Name>\n" .
+            '    <Description><![CDATA[' . htmlspecialchars($productDefault->getData('short_description'), ENT_QUOTES, 'UTF-8', false) .
             "]]></Description>\n");
 
         $brandId = $productDefault->getData('brand');
@@ -267,18 +299,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
             $ioObject->streamWrite('    <BrandExternalId>' . $brandId . "</BrandExternalId>\n");
         }
 
-        /* Make sure that CategoryExternalId is one written to Category section */
-        if($productDefault->getData("product_families") && $productDefault->getVisibility() == Mage_Catalog_Model_Product_Visibility::VISIBILITY_NOT_VISIBLE){
-            // if families are enabled and product is not visible, use parent categories
-            $parentId = array_pop($productDefault->getData("product_families"));
-            $parentProduct = $bvHelper->getProductFromProductExternalId($parentId);
-            $parentCategories = $parentProduct->getCategoryIds();
-            Mage::log("Product ".$productDefault->getSku()." using parent categories from ".$parentProduct->getSku());
-        } else {
-            // normal behavior
-            $parentCategories = $productDefault->getCategoryIds();
-            Mage::log("Product ".$productDefault->getSku()." using its own categories");
-        }
         if (!is_null($parentCategories) && count($parentCategories) > 0) {
             foreach ($parentCategories as $parentCategoryId) {
                 $parentCategory = Mage::getModel('catalog/category')->setStoreId($productDefault->getStoreId())->load($parentCategoryId);
@@ -289,7 +309,7 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
                             "</CategoryExternalId>\n");
                         break;
                     } else {
-                        Mage::log("NOT FOUND $categoryExternalId");
+                        Mage::log("        Category $categoryExternalId not found", Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
                     }
                 }
             }
@@ -315,14 +335,14 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
         $ioObject->streamWrite("    <Names>\n");
         foreach ($productsByLocale as $curLocale => $curProduct) {
             $ioObject->streamWrite('        <Name locale="' . $curLocale . '"><![CDATA[' .
-                htmlspecialchars($curProduct->getData('name'), ENT_QUOTES, 'UTF-8') . "]]></Name>\n");
+                htmlspecialchars($curProduct->getData('name'), ENT_QUOTES, 'UTF-8', false) . "]]></Name>\n");
         }
         $ioObject->streamWrite("    </Names>\n");
         // Write out localized <Descriptions>
         $ioObject->streamWrite("    <Descriptions>\n");
         foreach ($productsByLocale as $curLocale => $curProduct) {
             $ioObject->streamWrite('         <Description locale="' . $curLocale . '"><![CDATA[' .
-                htmlspecialchars($curProduct->getData('short_description'), ENT_QUOTES, 'UTF-8') . "]]></Description>\n");
+                htmlspecialchars($curProduct->getData('short_description'), ENT_QUOTES, 'UTF-8', false) . "]]></Description>\n");
         }
         $ioObject->streamWrite("    </Descriptions>\n");
         // Write out localized <ProductPageUrls>
@@ -381,9 +401,9 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
             }
         }
         catch (Exception $e) {
-            Mage::log('Failed to get families for product sku: ' . $product->getSku());
-            Mage::log($e->getMessage()."\n".$e->getTraceAsString());
-            Mage::log('Continuing generating feed.');
+            Mage::log('Failed to get families for product sku: ' . $product->getSku(), Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
+            Mage::log($e->getMessage()."\n".$e->getTraceAsString(), Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
+            Mage::log('Continuing generating feed.', Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
         }
         return $families;
     }
@@ -397,17 +417,27 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
             $storeId = $product->getStoreId();
             // Get image url from helper (this is for the default store
             $defaultStoreImageUrl = Mage::getModel('catalog/product_media_config')->getMediaUrl($product->getImage());
+
+            if($product->getImage() == '' || $product->getImage() == 'no_selection') {
+
+				$defaultStoreImageUrl = '';
+
+                if($product->getData("product_families")) {
+                    // if product families are enabled and product has no image, use configurable image
+                    $parents = $product->getData("product_families");
+                    $parentId = array_pop($parents);
+                    $parent = Mage::helper("bazaarvoice")->getProductFromProductExternalId($parentId);
+    				if (is_object($parent) && $parent->getImage() != '' && $parent->getImage() != 'no_selection'){
+        				$parent = Mage::getModel('catalog/product')->load($parent->getId());
+    					$parent->setStore($storeId);
+    					$defaultStoreImageUrl = Mage::getModel('catalog/product_media_config')->getMediaUrl($parent->getImage());
+    				}
+                }
+                if($defaultStoreImageUrl == '')
+                    $defaultStoreImageUrl = Mage::getBaseUrl('media') . 'catalog/product/placeholder/' . Mage::getStoreConfig('catalog/placeholder/image_placeholder', $storeId);
                 
-            if($product->getData("product_families") && ($product->getImage() == '' || $product->getImage() == 'no_selection')){
-                // if product families are enabled and product has no image, use configurable image
-                $parents = $product->getData("product_families");
-                $parentId = array_pop($parents);
-                $parent = Mage::helper("bazaarvoice")->getProductFromProductExternalId($parentId);
-                $parent->setStore($storeId);
-                $defaultStoreImageUrl = Mage::getModel('catalog/product_media_config')->getMediaUrl($parent->getImage());
             }
-            if(strpos($defaultStoreImageUrl, 'no_selection'))
-                $defaultStoreImageUrl = Mage::helper('catalog/image')->init($product, 'image');
+                
             // Get media base url for correct store
             $mediaBaseUrl = Mage::app()->getStore($storeId)->getBaseUrl('media');
             // Get default media base url
@@ -419,8 +449,8 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
             return $imageUrl;
         }
         catch (Exception $e) {
-            Mage::log('Failed to get image URL for product sku: ' . $product->getSku());
-            Mage::log('Continuing generating feed.');
+            Mage::log('Failed to get image URL for product sku: ' . $product->getSku(), Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
+            Mage::log('Continuing generating feed.', Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
 
             return '';
         }
@@ -434,8 +464,10 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
             $parents = $product->getData("product_families");
             $parentId = array_pop($parents);
             $parent = Mage::helper("bazaarvoice")->getProductFromProductExternalId($parentId);
-            $parent->setStoreId($product->getStoreId());
-            $productUrl = $parent->getProductUrl(false);
+			if (is_object($parent)){
+				$parent->setStoreId($product->getStoreId());
+				$productUrl = $parent->getProductUrl(false);
+			}
         } else {
             // otherwise use default
             $productUrl = $product->getProductUrl(false);
