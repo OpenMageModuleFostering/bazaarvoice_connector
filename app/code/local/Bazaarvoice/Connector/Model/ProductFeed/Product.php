@@ -28,10 +28,7 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
         // Filter collection for the specific website
         $productIds->addWebsiteFilter($website->getId());
         // Filter collection for product status
-        if(Mage::getStoreConfig('bazaarvoice/feeds/filter_global')) {
-            // Filter collection for product status
-            $productIds->addAttributeToFilter('status', Mage_Catalog_Model_Product_Status::STATUS_ENABLED);
-        }
+        $productIds->addAttributeToFilter('status', Mage_Catalog_Model_Product_Status::STATUS_ENABLED);
 
 
         // Output tag only if more than 1 product
@@ -53,16 +50,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
                 $product->setStoreId($store->getId());
                 // Load product object
                 $product->load($productId->getId());
-                // skip disabled products
-                if($product->getStatus() != Mage_Catalog_Model_Product_Status::STATUS_ENABLED) {
-                    if ($website->getDefaultGroup()->getDefaultStoreId() == $store->getId()) {
-                        // if default store/group skip entire product
-                        continue 2;
-                    } else {
-                        // else just skip store
-                        continue;
-                    }
-                }
                 // Product families
                 if (Mage::getStoreConfig('bazaarvoice/feeds/families', $store->getId())) {
                     $product->setData("product_families", $this->getProductFamilies($product));
@@ -123,10 +110,7 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
         // Filter collection for the specific website
         $productIds->addWebsiteFilter($group->getWebsiteId());
         // Filter collection for product status
-        if(Mage::getStoreConfig('bazaarvoice/feeds/filter_global')) {
-            // Filter collection for product status
-            $productIds->addAttributeToFilter('status', Mage_Catalog_Model_Product_Status::STATUS_ENABLED);
-        }
+        $productIds->addAttributeToFilter('status', Mage_Catalog_Model_Product_Status::STATUS_ENABLED);
 
         // Output tag only if more than 1 product
         if (count($productIds) > 0) {
@@ -147,16 +131,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
                 $product->setStoreId($store->getId());
                 // Load product object
                 $product->load($productId->getId());
-                // skip disabled products
-                if($product->getStatus() != Mage_Catalog_Model_Product_Status::STATUS_ENABLED) {
-                    if ($group->getDefaultStoreId() == $store->getId()) {
-                        // if default store/group skip entire product
-                        continue 2;
-                    } else {
-                        // else just skip store
-                        continue;
-                    }
-                }
                 // Product families
                 if (Mage::getStoreConfig('bazaarvoice/feeds/families', $store->getId())) {
                     $product->setData("product_families", $this->getProductFamilies($product));
@@ -215,10 +189,8 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
         $productIds = Mage::getModel('catalog/product')->getCollection();
         // Filter collection for the specific website
         $productIds->addWebsiteFilter($store->getWebsiteId());
-        if(Mage::getStoreConfig('bazaarvoice/feeds/filter_global')) {
-            // Filter collection for product status
-            $productIds->addAttributeToFilter('status', Mage_Catalog_Model_Product_Status::STATUS_ENABLED);
-        }
+        // Filter collection for product status
+        $productIds->addAttributeToFilter('status', Mage_Catalog_Model_Product_Status::STATUS_ENABLED);
         if (Mage::getStoreConfig('bazaarvoice/feeds/families', $store->getId()) == false) {
             // Filter collection for product visibility
             // if families are disabled
@@ -240,9 +212,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
             $productDefault->setStoreId($store->getId());
             // Load product object
             $productDefault->load($productId->getId());
-            // skip disabled products
-            if($productDefault->getStatus() != Mage_Catalog_Model_Product_Status::STATUS_ENABLED)
-                continue;
             // Product families
             if (Mage::getStoreConfig('bazaarvoice/feeds/families', $store->getId())) {
                 $productDefault->setData("product_families", $this->getProductFamilies($productDefault));
@@ -349,13 +318,15 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
                 Mage::log("   BV - Category $categoryExternalId not found", Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
             }
         }
-
-        foreach(array('UPC', 'ManufacturerPartNumber', 'EAN', 'ISBN', 'ModelNumber') as $customAttribute) {
-            $settingCode = strtolower($customAttribute);
-            $attributeCode = Mage::getStoreConfig("bazaarvoice/bv_config/product_feed_{$settingCode}_attribute_code");
-            if ($attributeCode && $productDefault->getData($attributeCode)) {
-                $ioObject->streamWrite('    <'.$customAttribute.'s><'.$customAttribute.'><![CDATA[' . $productDefault->getData($attributeCode) . ']]></'.$customAttribute.'></'.$customAttribute."s>\n");
-            }
+        
+        $upcAttribute = Mage::getStoreConfig("bazaarvoice/bv_config/product_feed_upc_attribute_code");
+        if($upcAttribute && $productDefault->getData($upcAttribute)) {
+            $ioObject->streamWrite('    <UPCs><UPC>' . $productDefault->getData($upcAttribute) . "</UPC></UPCs>\n");            
+        }
+        
+        $eanAttribute = Mage::getStoreConfig("bazaarvoice/bv_config/product_feed_ean_attribute_code");
+        if($eanAttribute && $productDefault->getData($eanAttribute)) {
+            $ioObject->streamWrite('    <EANs><EAN>' . $productDefault->getData($eanAttribute) . "</EAN></EANs>\n");            
         }
 
         $ioObject->streamWrite('    <ProductPageUrl>' . "<![CDATA[" . $this->getProductUrl($productDefault) . "]]>" . "</ProductPageUrl>\n");
@@ -413,12 +384,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
 
         // Close this product
         $ioObject->streamWrite("</Product>\n");
-
-        $productDefault->clearInstance();
-        foreach($productsByLocale as $localeProduct) {
-            $localeProduct->clearInstance();
-        }
-        return true;
     }
     
     protected function getProductFamilies(Mage_Catalog_Model_Product $product)

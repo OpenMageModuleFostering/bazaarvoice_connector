@@ -37,13 +37,8 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
         // Include the root category itself in the feed
         $categoryIds
             ->addAttributeToFilter('level', array('gt' => 1))
+            ->addAttributeToFilter('is_active', 1)
             ->addAttributeToFilter('path', array('like' => $rootCategoryPath . '/%'));
-
-        if(Mage::getStoreConfig('bazaarvoice/feeds/filter_global')) {
-            $categoryIds
-                ->addAttributeToFilter('is_active', 1);
-        }
-
         // Check count of categories
         if (count($categoryIds) > 0) {
             $ioObject->streamWrite("<Categories>\n");
@@ -62,14 +57,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
                 $category->setStoreId($store->getId());
                 // Load category object
                 $category->load($categoryId->getId());
-                // skip inactive categories
-                if($category->getData('is_active') != 1) {
-                    if ($website->getDefaultGroup()->getDefaultStoreId() == $store->getId()) {
-                        continue 2;
-                    } else {
-                        continue;
-                    }
-                }
                 // Capture localized URL in extra var
                 $category->setData('localized_url', $this->getCategoryUrl($category));
                 // Set default category
@@ -114,13 +101,8 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
         // Include the root category itself in the feed
         $categoryIds
             ->addAttributeToFilter('level', array('gt' => 1))
-            ->addAttributeToFilter('path', array('like' => $rootCategoryPath . '/%'));
-
-        if(Mage::getStoreConfig('bazaarvoice/feeds/filter_global')) {
-            $categoryIds
-                ->addAttributeToFilter('is_active', 1);
-        }
-
+            ->addAttributeToFilter('is_active', 1)
+            ->addAttributeToFilter('path', array('like' => $rootCategoryPath . '%'));
         // Check count of categories
         if (count($categoryIds) > 0) {
             $ioObject->streamWrite("<Categories>\n");
@@ -139,14 +121,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
                 $category->setStoreId($store->getId());
                 // Load category object
                 $category->load($categoryId->getId());
-                // skip inactive categories
-                if($category->getData('is_active') != 1) {
-                    if ($group->getDefaultStoreId() == $store->getId()) {
-                        continue 2;
-                    } else {
-                        continue;
-                    }
-                }
                 // Capture localized URL in extra var
                 $category->setData('localized_url', $this->getCategoryUrl($category));
                 // Set default category
@@ -191,13 +165,8 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
         // Include the root category itself in the feed
         $categoryIds
             ->addAttributeToFilter('level', array('gt' => 1))
-            ->addAttributeToFilter('path', array('like' => $rootCategoryPath . '/%'));
-
-        if(Mage::getStoreConfig('bazaarvoice/feeds/filter_global')) {
-            $categoryIds
-                ->addAttributeToFilter('is_active', 1);
-        }
-
+            ->addAttributeToFilter('is_active', 1)
+            ->addAttributeToFilter('path', array('like' => $rootCategoryPath . '%'));
         // Check count of categories
         if (count($categoryIds) > 0) {
             $ioObject->streamWrite("<Categories>\n");
@@ -214,9 +183,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
             $categoryDefault->setStoreId($store->getId());
             // Load category object
             $categoryDefault->load($categoryId->getId());
-            // skip inactive categories
-            if($categoryDefault->getData('is_active') != 1)
-                continue;
             // Capture localized URL in extra var
             $categoryDefault->setData('localized_url', $this->getCategoryUrl($categoryDefault));
             // Get store locale
@@ -259,8 +225,6 @@ class Bazaarvoice_Connector_Model_ProductFeed_Category extends Mage_Core_Model_A
         }
 
         array_push($this->_categoryIdList, $categoryExternalId);
-
-        Mage::log('write category: ' . $categoryExternalId, Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
 
         $ioObject->streamWrite("<Category>\n" .
             "    <ExternalId>" . $categoryExternalId . "</ExternalId>\n" .

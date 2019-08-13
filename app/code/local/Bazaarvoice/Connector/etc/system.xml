@@ -131,11 +131,11 @@
                             <show_in_store>1</show_in_store>
                         </cloud_seo_key>
                         <enable_roibeacon>
-                            <label>Enable BV Pixel</label>
+                            <label>Enable ROI Beacon</label>
                             <frontend_type>select</frontend_type>
                             <source_model>adminhtml/system_config_source_yesno</source_model>
                             <comment>
-                                <![CDATA[Turn on the BV Pixel on the purchase transaction (checkout) page.  See documentation for additional steps that must be completed for this feature to take effect.]]></comment>
+                                <![CDATA[Turn on the BV ROI beacon tag on the purchase transaction (checkout) page.  See documentation for additional steps that must be completed for this feature to take effect.]]></comment>
                             <sort_order>100</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
@@ -282,17 +282,6 @@
                             <show_in_website>1</show_in_website>
                             <show_in_store>1</show_in_store>
                         </triggering_event>
-                        <lookback>
-                            <label>Purchase Feed Lookback</label>
-                            <frontend_type>text</frontend_type>
-                            <comment>
-                                <![CDATA[Number of days back to begin looking for orders.]]></comment>
-                            <sort_order>40</sort_order>
-                            <backend_model>bazaarvoice/source_lookback</backend_model>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                        </lookback>
                         <admin_email>
                             <label>Administrator Email</label>
                             <frontend_type>text</frontend_type>
@@ -314,27 +303,6 @@
                             <show_in_website>0</show_in_website>
                             <show_in_store>0</show_in_store>
                         </generation_scope>
-                        <filter_global>
-                            <label>Check Product Status at Default Scope</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <comment>
-                                <![CDATA[If 'yes', feed generation will filter out products that are disabled at the default scope. This makes feed generation faster, but does not account for products that are disabled by default but enable for specific stores.]]></comment>
-                            <sort_order>100</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>0</show_in_website>
-                            <show_in_store>0</show_in_store>
-                        </filter_global>
-                        <run_purchase translate="label">
-                            <label>Run Purchase Feed</label>
-                            <comment><![CDATA[This will run the purchase feed using currently saved config settings.]]></comment>
-                            <frontend_type>button</frontend_type>
-                            <frontend_model>bazaarvoice/system_config_form_button</frontend_model>
-                            <sort_order>110</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                        </run_purchase>
                     </fields>
                 </feeds>
             </groups>

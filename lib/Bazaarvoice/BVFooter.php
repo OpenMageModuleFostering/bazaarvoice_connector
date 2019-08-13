@@ -4,9 +4,10 @@
  * BV PHP SEO SDK Footer
  */
 class BVFooter {
-  const VERSION = '3.2.1';
+  const VERSION = '3.1.0';
 
   private $base;
+  private $url;
   private $access_method;
   private $msg;
 
@@ -15,6 +16,7 @@ class BVFooter {
    *
    * @access public
    * @param array ($base) - base class parameters
+   * @param string ($url) - SEO url
    * @param string ($access_method) - access method
    * @param string ($msg) - build message
    * @return object

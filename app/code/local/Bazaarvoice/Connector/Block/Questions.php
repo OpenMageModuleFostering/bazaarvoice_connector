@@ -44,7 +44,6 @@ class Bazaarvoice_Connector_Block_Questions extends Mage_Core_Block_Template
             if(isset($parts['query'])) {
                 parse_str($parts['query'], $query);
                 unset($query['bvrrp']);
-                unset($query['bvstate']);
                 $baseUrl = $parts['scheme'] . '://' . $parts['host'] . $parts['path'] . '?' . http_build_query($query);
             } else {
                 $baseUrl = $productUrl;
@@ -61,14 +60,9 @@ class Bazaarvoice_Connector_Block_Questions extends Mage_Core_Block_Template
             if($this->getRequest()->getParam('bvreveal') == 'debug')
                 $params['bvreveal'] = 'debug';
             
-            try{
-                $bv = new BV($params);
-                $seoContent = $bv->questions->getContent();
-                $seoContent .= '<!-- BV Questions Parameters: ' . print_r($params, 1) . '-->';
-            } Catch (Exception $e) {
-                Mage::logException($e);
-                return;
-            }
+            $bv = new BV($params);
+            $seoContent = $bv->questions->getContent();
+            $seoContent .= '<!-- BV Questions Parameters: ' . print_r($params, 1) . '-->';
         }
         
         return $seoContent;

@@ -6,7 +6,7 @@ class Bazaarvoice_Connector_Helper_Data extends Mage_Core_Helper_Abstract
     const BV_SUBJECT_TYPE = 'bvSubjectType';
     const BV_EXTERNAL_SUBJECT_NAME = 'bvExternalSubjectName';
     const BV_EXTERNAL_SUBJECT_ID = 'bvExternalSubjectID';
-
+    
     const LOG_FILE = 'bazaarvoice.log';
 
     const CONST_SMARTSEO_BVRRP = 'bvrrp';
@@ -137,7 +137,7 @@ class Bazaarvoice_Connector_Helper_Data extends Mage_Core_Helper_Abstract
         $sftp = Mage::helper('bazaarvoice/sftpConnection');
 
         if (!$sftp->connect($sftpHost, 22, $sftpUser, $sftpPw)) {
-            Mage::throwException('    BV - SFTP connection attempt failed!', self::LOG_FILE);
+            Mage::throwException('    BV - SFTP connection attempt failed!', Zend_Log::ERR, self::LOG_FILE);
         }
         return $sftp;
     }
@@ -310,10 +310,15 @@ class Bazaarvoice_Connector_Helper_Data extends Mage_Core_Helper_Abstract
         // Build protocol based on current page
         $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] != '') ? 'https' : 'http';
         // Build hostname based on environment setting
-        $apiHostname =  'display.ugc.bazaarvoice.com';
-
+        $environment = Mage::getStoreConfig('bazaarvoice/general/environment', $store);
+        if ($environment == 'staging') {
+            $apiHostname =  'display-stg.ugc.bazaarvoice.com';
+        }
+        else {
+            $apiHostname =  'display.ugc.bazaarvoice.com';
+        }
         // Build static dir name based on param
-        if ($isStatic) {
+        if($isStatic) {
             $static = 'static/';
         }
         else {
@@ -322,16 +327,11 @@ class Bazaarvoice_Connector_Helper_Data extends Mage_Core_Helper_Abstract
         // Lookup other config settings
         $clientName = Mage::getStoreConfig('bazaarvoice/general/client_name', $store);
         $deploymnetZoneName = Mage::getStoreConfig('bazaarvoice/general/deployment_zone', $store);
-        // clean deployment zone for url
-        $deploymnetZoneName = strtolower(str_replace(' ', '_', $deploymnetZoneName));
         // Get locale code from BV config, 
         // Note that this doesn't use Magento's locale, this will allow clients to override this and map it as they see fit
         $localeCode = Mage::getStoreConfig('bazaarvoice/general/locale', $store);
-
-        $staging = $this->getBvStaging();
-
         // Build url string
-        $url = $protocol . '://' . $apiHostname . $staging . $static . $clientName . '/' . $deploymnetZoneName . '/' . $localeCode;
+        $url = $protocol . '://' . $apiHostname . '/' . $static . $clientName . '/' . urlencode($deploymnetZoneName) . '/' . $localeCode;
         // Return final url
         return $url;
     }

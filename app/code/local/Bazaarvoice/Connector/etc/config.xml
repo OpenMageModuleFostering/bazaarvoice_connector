@@ -8,7 +8,7 @@
 <config>
     <modules>
         <Bazaarvoice_Connector>
-            <version>6.3.10</version>
+            <version>6.3.2.1</version>
             <depends>
                 <!-- no dependencies -->
             </depends>
@@ -52,18 +52,6 @@
             </bazaarvoice_setup>
         </resources>
     </global>
-    
-    <admin>
-        <routers>
-            <adminhtml>
-                <args>
-                    <modules>
-                        <bazaarvoice after="Mage_Adminhtml">Bazaarvoice_Connector</bazaarvoice>
-                    </modules>
-                </args>
-            </adminhtml>
-        </routers>
-    </admin>
 
     <frontend>
         <product>
@@ -139,10 +127,8 @@
                 <enable_product_feed>1</enable_product_feed>
                 <families>0</families>
                 <enable_purchase_feed>0</enable_purchase_feed>
-                <lookback>30</lookback>
                 <triggering_event>shipping</triggering_event>
                 <generation_scope>website</generation_scope>
-                <filter_global>1</filter_global>
             </feeds>
         
             <!-- These config settings are intended to be overriden with installation-specific values in
@@ -159,9 +145,6 @@
                 <product_feed_brand_attribute_code></product_feed_brand_attribute_code>
                 <product_feed_upc_attribute_code></product_feed_upc_attribute_code>
                 <product_feed_ean_attribute_code></product_feed_ean_attribute_code>
-                <product_feed_isbn_attribute_code></product_feed_isbn_attribute_code>
-                <product_feed_manufacturerpartnumber_attribute_code></product_feed_manufacturerpartnumber_attribute_code>
-                <product_feed_modelnumber_attribute_code></product_feed_modelnumber_attribute_code>
                 <!-- Setting to determine whether simple products show reviews and ratings 
                      for their entire product family -->
                 <product_feed_export_bvfamilies_expand>true</product_feed_export_bvfamilies_expand>
