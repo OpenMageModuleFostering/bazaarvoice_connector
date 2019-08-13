@@ -323,7 +323,7 @@ class Bazaarvoice_Connector_Model_ProductFeed_Product extends Mage_Core_Model_Ab
             $settingCode = strtolower($customAttribute);
             $attributeCode = Mage::getStoreConfig("bazaarvoice/bv_config/product_feed_{$settingCode}_attribute_code");
             if ($attributeCode && $productDefault->getData($attributeCode)) {
-                $ioObject->streamWrite('    <'.$customAttribute.'s><'.$customAttribute.'>' . $productDefault->getData($attributeCode) . '</'.$customAttribute.'></'.$customAttribute."s>\n");
+                $ioObject->streamWrite('    <'.$customAttribute.'s><'.$customAttribute.'><![CDATA[' . $productDefault->getData($attributeCode) . ']]></'.$customAttribute.'></'.$customAttribute."s>\n");
             }
         }
 
