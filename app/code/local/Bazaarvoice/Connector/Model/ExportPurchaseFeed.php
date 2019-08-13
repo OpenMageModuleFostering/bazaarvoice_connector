@@ -5,13 +5,13 @@ class Bazaarvoice_Connector_Model_ExportPurchaseFeed extends Mage_Core_Model_Abs
     const ALREADY_SENT_IN_FEED_FLAG = 'sent_in_bv_postpurchase_feed';
     const TRIGGER_EVENT_PURCHASE = 'purchase';
     const TRIGGER_EVENT_SHIP = 'ship';
-
-    const NUM_DAYS_LOOKBACK = 30;
-
     const DEBUG_OUTPUT = false;
+
+    protected $num_days_lookback;
 
     protected function _construct()
     {
+        $this->num_days_lookback = Mage::getStoreConfig('bazaarvoice/feeds/lookback');
     }
 
     public function exportPurchaseFeed()
@@ -452,23 +452,20 @@ class Bazaarvoice_Connector_Model_ExportPurchaseFeed extends Mage_Core_Model_Abs
         /* @var $bvHelper Bazaarvoice_Connector_Helper_Data */
         $bvHelper = Mage::helper('bazaarvoice');
 
-        // Initialize references to the object model accessors
-        $orderModel = Mage::getModel('sales/order');
-
         // Gather settings for how this feed should be generated
         $triggeringEvent = Mage::getStoreConfig('bazaarvoice/feeds/triggering_event') ===
         Bazaarvoice_Connector_Model_Source_TriggeringEvent::SHIPPING ? self::TRIGGER_EVENT_SHIP : self::TRIGGER_EVENT_PURCHASE;
         // Hard code former settings
         $delayDaysSinceEvent = 1;
         Mage::log("    BV - Config {triggering_event: " . $triggeringEvent
-        . ", NumDaysLookback: " . self::NUM_DAYS_LOOKBACK
+        . ", NumDaysLookback: " . $this->num_days_lookback
         . ", NumDaysLookbackStartDate: " . $this->getNumDaysLookbackStartDate()
         . ", DelayDaysSinceEvent: " . $delayDaysSinceEvent
         . ', DelayDaysThreshold: ' . date('c', $this->getDelayDaysThresholdTimestamp($delayDaysSinceEvent)) . '}', Zend_Log::INFO, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
         
         $ordersToExport = array();
         foreach ($orders->getAllIds() as $orderId) {
-            $order = $orderModel->load($orderId);
+            $order = Mage::getModel('sales/order')->load($orderId);
             if (!$this->shouldIncludeOrder($order, $triggeringEvent, $delayDaysSinceEvent)) {
                 continue;
             }
@@ -481,7 +478,7 @@ class Bazaarvoice_Connector_Model_ExportPurchaseFeed extends Mage_Core_Model_Abs
         foreach ($ordersToExport as $orderId) {
             try{
                 /* @var $order Mage_Sales_Model_Order */
-                $order = $orderModel->load($orderId);
+                $order = Mage::getModel('sales/order')->load($orderId);
                 $store = $order->getStore();
                 
                 
@@ -491,7 +488,7 @@ class Bazaarvoice_Connector_Model_ExportPurchaseFeed extends Mage_Core_Model_Abs
 //                $orderXml .= '    <OrderID>' . $order->getIncrementId() . "</OrderID>\n";
                 $orderXml .= '    <EmailAddress>' . $order->getCustomerEmail() . "</EmailAddress>\n";
                 $orderXml .= '    <Locale>' . $store->getConfig('bazaarvoice/general/locale') . "</Locale>\n";
-                $orderXml .= '    <UserName>' . $order->getCustomerName() . "</UserName>\n";
+                $orderXml .= '    <UserName><![CDATA[' . $order->getCustomerFirstname() . "]]></UserName>\n";
                 if($order->getCustomerId()) {
                     $userId = $order->getCustomerId();
                 } else {
@@ -514,14 +511,13 @@ class Bazaarvoice_Connector_Model_ExportPurchaseFeed extends Mage_Core_Model_Abs
                     $product = $bvHelper->getReviewableProductFromOrderItem($item);
                     
                     // skip disabled products
-                    //if($product->getStatus() != Mage_Catalog_Model_Product_Status::STATUS_ENABLED) continue;
+                    if($product->getStatus() != Mage_Catalog_Model_Product_Status::STATUS_ENABLED) continue;
                     
                     if (!is_null($product)) {
                         $productXml = '';
                         $productXml .= "        <Product>\n";
-                        $productXml .= '            <ExternalId>' . $bvHelper->getProductId($product) .
-                        "</ExternalId>\n";
-                        $productXml .= '            <Name>' . htmlspecialchars($product->getName(), ENT_QUOTES, 'UTF-8', false) . "</Name>\n";
+                        $productXml .= '            <ExternalId>' . $bvHelper->getProductId($product) . "</ExternalId>\n";
+                        $productXml .= '            <Name><![CDATA[' . htmlspecialchars($product->getName(), ENT_QUOTES, 'UTF-8', false) . "]]></Name>\n";
                         
                         $imageUrl = $product->getImageUrl();
                         $originalPrice = $item->getOriginalPrice();
@@ -596,7 +592,7 @@ class Bazaarvoice_Connector_Model_ExportPurchaseFeed extends Mage_Core_Model_Abs
 
     protected function getNumDaysLookbackStartDate()
     {
-        return date('Y-m-d', strtotime(date('Y-m-d', time()) . ' -' . self::NUM_DAYS_LOOKBACK . ' days'));
+        return date('Y-m-d', strtotime(date('Y-m-d', time()) . ' -' . $this->num_days_lookback . ' days'));
     }
 
     protected function getDelayDaysThresholdTimestamp($delayDaysSinceEvent)

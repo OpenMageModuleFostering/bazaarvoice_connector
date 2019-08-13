@@ -44,6 +44,7 @@ class Bazaarvoice_Connector_Block_Reviews extends Mage_Core_Block_Template
             if(isset($parts['query'])) {
                 parse_str($parts['query'], $query);
                 unset($query['bvrrp']);
+                unset($query['bvstate']);
                 $baseUrl = $parts['scheme'] . '://' . $parts['host'] . $parts['path'] . '?' . http_build_query($query);
             } else {
                 $baseUrl = $productUrl;
@@ -60,9 +61,14 @@ class Bazaarvoice_Connector_Block_Reviews extends Mage_Core_Block_Template
             if($this->getRequest()->getParam('bvreveal') == 'debug')
                 $params['bvreveal'] = 'debug';
             
-            $bv = new BV($params);
-            $seoContent = $bv->reviews->getContent();
-            $seoContent .= '<!-- BV Reviews Parameters: ' . print_r($params, 1) . '-->';
+            try{
+                $bv = new BV($params);
+                $seoContent = $bv->reviews->getContent();
+                $seoContent .= '<!-- BV Reviews Parameters: ' . print_r($params, 1) . '-->';
+            } Catch (Exception $e) {
+                Mage::logException($e);
+                return;
+            }
         }
         
         return $seoContent;

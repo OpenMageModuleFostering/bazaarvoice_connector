@@ -26,6 +26,7 @@ class Bazaarvoice_Connector_Block_Roi_Beacon extends Mage_Core_Block_Template
     public function getOrderDetails()
     {
         $orderDetails = array();
+        $result = '';
         $orderId = Mage::getSingleton('checkout/session')->getLastOrderId();
         if ($orderId)
         {
@@ -63,14 +64,14 @@ class Bazaarvoice_Connector_Block_Roi_Beacon extends Mage_Core_Block_Template
                     // 'category' is not included.  Mage products can be in 0 - many categories.  Should we try to include it?
                     $itemDetails['price'] = number_format($item->getPrice(), 2, '.', '');
                     $itemDetails['quantity'] = number_format($item->getQtyOrdered(), 0);
-                    $itemDetails['imageUrl'] = $product->getImageUrl();
+                    $itemDetails['imageURL'] = $product->getImageUrl();
                     
                     if(Mage::getStoreConfig('bazaarvoice/feeds/families') && $item->getParentItem()) {
-                        if(strpos($itemDetails['imageUrl'], "placeholder/image.jpg")) {
+                        if(strpos($itemDetails['imageURL'], "placeholder/image.jpg")) {
                             // if product families are enabled and product has no image, use configurable image
                             $parentId = $item->getParentItem()->getProductId();
                             $parent = Mage::getModel('catalog/product')->load($parentId);
-                            $itemDetails['imageUrl'] = $parent->getImageUrl();
+                            $itemDetails['imageURL'] = $parent->getImageUrl();
                         }
                         // also get price from parent item
                         $itemDetails['price'] = number_format($item->getParentItem()->getPrice(), 2, '.', '');
@@ -86,16 +87,35 @@ class Bazaarvoice_Connector_Block_Roi_Beacon extends Mage_Core_Block_Template
                 }
                 $orderDetails['userId'] = $userId;
                 $orderDetails['email'] = $order->getCustomerEmail();
-                $orderDetails['nickname'] = $order->getCustomerEmail();
+                $orderDetails['nickname'] = $order->getCustomerFirstname();
                 // There is no 'deliveryDate' yet
                 $orderDetails['locale'] = Mage::getStoreConfig('bazaarvoice/general/locale', $order->getStoreId());
 
                 // Add partnerSource field
                 $orderDetails['partnerSource'] = 'Magento Extension r' . Mage::helper('bazaarvoice')->getExtensionVersion();
+                $deploymentZone = Mage::getStoreConfig('bazaarvoice/general/deployment_zone', $order->getStoreId());
+                $orderDetails['deploymentZone'] = $deploymentZone;
+
+                $loader = '<script src="//apps.bazaarvoice.com/deployments/'
+                    . Mage::getStoreConfig('bazaarvoice/general/client_name', $order->getStoreId())
+                    . '/' . strtolower(str_replace(' ', '_', $deploymentZone))
+                    . '/' . Mage::getStoreConfig('bazaarvoice/general/environment', $order->getStoreId())
+                    . '/' . Mage::getStoreConfig('bazaarvoice/general/locale', $order->getStoreId())
+                    . '/bv.js"></script>';
+
+                Mage::log($orderDetails, Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
+                $result = '
+                <!--
+                ' . print_r($orderDetails, 1) . '
+                -->';
+                $result .= $loader."\n";
+                $result .= '
+                <script type="text/javascript">
+                    var transactionData = ' . json_encode($orderDetails, JSON_UNESCAPED_UNICODE) . ';
+                    BV.pixel.trackTransaction(transactionData);
+                </script>';
             }
         }
-        Mage::log($orderDetails, Zend_Log::DEBUG, Bazaarvoice_Connector_Helper_Data::LOG_FILE);
-        $orderDetailsJson = Mage::helper('core')->jsonEncode($orderDetails);
-        return urldecode(stripslashes($orderDetailsJson));
+        return $result;
     }
 }
