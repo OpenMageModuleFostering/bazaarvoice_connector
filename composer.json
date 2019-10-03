@@ -1,5 +1,5 @@
 {
-    "name": "OpenMageModuleFostering\/Bazaarvoice_Connector",
+    "name": "openmage-module-fostering\/bazaarvoice_connector",
     "type": "magento-module",
     "license": "Bazaarvoice,-Inc.",
     "homepage": "",
