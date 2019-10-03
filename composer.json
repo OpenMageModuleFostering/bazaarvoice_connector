@@ -1,16 +1,19 @@
 {
-    "name": "OpenMageModuleFostering/Bazaarvoice_Connector",
+    "name": "OpenMageModuleFostering\/Bazaarvoice_Connector",
     "type": "magento-module",
     "license": "Bazaarvoice,-Inc.",
     "homepage": "",
     "description": "Integration extension for Bazaarvoice customers",
     "authors": [
-    {
-        "name": "BV DTS",
-        "email": "dts@bazaarvoice.com"
-    }
-],
+        {
+            "name": "BV DTS",
+            "email": "dts@bazaarvoice.com"
+        }
+    ],
     "suggest": {
-        "magento-hackathon/magento-composer-installer": "*"
-    }
+        "magento-hackathon\/magento-composer-installer": "*"
+    },
+    "keywords": [
+        "openmage-module"
+    ]
 }
